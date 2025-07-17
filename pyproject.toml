@@ -1,0 +1,16 @@
+[project]
+name = "ai-mind-meld"
+version = "0.1.0"
+description = "An AI implementation of the improv game \"Mind Meld\" where two AI players attempt to converge on the same word through iterative rounds"
+readme = "README.md"
+license = "MPL-2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.95.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "pre-commit",
+]
