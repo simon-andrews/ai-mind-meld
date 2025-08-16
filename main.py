@@ -64,6 +64,7 @@ class GameState:
     round_number: int = 1
     player1_words: List[str] = field(default_factory=list)
     player2_words: List[str] = field(default_factory=list)
+    used_words: set[str] = field(default_factory=set)
     convergence_achieved: bool = False
 
 
@@ -87,23 +88,58 @@ class MindMeldAI:
         self.word_history: List[str] = []
 
     def generate_word(
-        self, game_state: GameState, use_predefined_word: bool = False
+        self,
+        game_state: GameState,
+        use_predefined_word: bool = False,
+        max_retries: int = 3,
     ) -> str:
-        """Generate a word based on the current game state."""
+        """Generate a word based on the current game state, retrying if word already used."""
         # For first round without predefined words, use dictionary
         if game_state.round_number == 1 and not use_predefined_word:
-            word = _get_random_fallback_word()
+            word = self._get_unused_random_word(game_state.used_words)
             self.word_history.append(word)
             return word
 
         context = self._build_context(game_state)
-        self._display_thinking_header()
 
-        response_content = self._get_ai_response(context)
-        word = _extract_word_from_response(response_content)
+        # Try to generate a unique word, with retries
+        for attempt in range(max_retries + 1):
+            self._display_thinking_header(attempt + 1, max_retries + 1)
 
-        self.word_history.append(word)
-        return word
+            response_content = self._get_ai_response(context)
+            word = _extract_word_from_response(response_content)
+
+            if word not in game_state.used_words:
+                self.word_history.append(word)
+                return word
+            else:
+                print(
+                    f"\n⚠️  Word '{word}' has already been used. Retrying... (Attempt {attempt + 1}/{max_retries + 1})"
+                )
+                if attempt < max_retries:
+                    # Add context about needing a different word for retry
+                    context += f"\n\nNote: The word '{word}' has already been used in this game. Please choose a different word."
+
+        # If all retries failed, use a fallback word
+        print("\n🔄 All attempts used repeated words. Using fallback...")
+        fallback_word = self._get_unused_random_word(game_state.used_words)
+        self.word_history.append(fallback_word)
+        return fallback_word
+
+    def _get_unused_random_word(self, used_words: set[str]) -> str:
+        """Get a random unused word from the dictionary."""
+        with open("dictionary.txt", "r") as f:
+            words = [line.strip().upper() for line in f if line.strip()]
+
+        # Filter out used words
+        available_words = [word for word in words if word not in used_words]
+
+        if not available_words:
+            # If somehow all words are used, just return a random one
+            # This is very unlikely to happen in practice
+            return random.choice(words)
+
+        return random.choice(available_words)
 
     def _build_context(self, game_state: GameState) -> str:
         """Build the context prompt for the AI based on game state."""
@@ -129,7 +165,6 @@ class MindMeldAI:
                     "Try to think of a word that might lead to convergence with your opponent's thinking.",
                     "Remember: The goal is to eventually say the same word as your opponent.",
                     "Think about word associations, common concepts, or themes that might emerge.",
-                    "Remember that repeating words that have already been said by either player is not allowed.",
                 ]
             )
 
@@ -142,9 +177,14 @@ class MindMeldAI:
 
         return "\n".join(context_parts)
 
-    def _display_thinking_header(self) -> None:
+    def _display_thinking_header(self, attempt: int = 1, max_attempts: int = 1) -> None:
         """Display the thinking process header."""
-        print(f"\n💭 {self.name}'s thinking process:")
+        if max_attempts > 1:
+            print(
+                f"\n💭 {self.name}'s thinking process (Attempt {attempt}/{max_attempts}):"
+            )
+        else:
+            print(f"\n💭 {self.name}'s thinking process:")
         print("-" * 40)
 
     def _get_ai_response(self, context: str) -> str:
@@ -180,7 +220,8 @@ class MindMeldGame:
     def __init__(
         self,
         openrouter_api_key: str,
-        model: str = "anthropic/claude-sonnet-4",
+        player1_model: str = "anthropic/claude-sonnet-4",
+        player2_model: str = "anthropic/claude-sonnet-4",
         player1_word: Optional[str] = None,
         player2_word: Optional[str] = None,
         max_tokens: int = 2048,
@@ -195,10 +236,10 @@ class MindMeldGame:
 
         # Create two AI players with specified model and parameters
         self.player1 = MindMeldAI(
-            "AI Player 1", model, self.client, max_tokens, temperature
+            "AI Player 1", player1_model, self.client, max_tokens, temperature
         )
         self.player2 = MindMeldAI(
-            "AI Player 2", model, self.client, max_tokens, temperature
+            "AI Player 2", player2_model, self.client, max_tokens, temperature
         )
 
         # Store predefined first words if provided
@@ -243,6 +284,8 @@ class MindMeldGame:
         # Update game state
         self.game_state.player1_words.append(word1)
         self.game_state.player2_words.append(word2)
+        self.game_state.used_words.add(word1)
+        self.game_state.used_words.add(word2)
 
         # Check for convergence
         if word1 == word2:
@@ -316,8 +359,17 @@ def main() -> None:
     parser.add_argument(
         "--model",
         type=str,
-        default="anthropic/claude-sonnet-4",
-        help="Model to use for both AI players (default: anthropic/claude-sonnet-4)",
+        help="Global model to use for both AI players. Cannot be used with --player-*-model.",
+    )
+    parser.add_argument(
+        "--player-1-model",
+        type=str,
+        help="Model to use for Player 1. Must be used with --player-2-model.",
+    )
+    parser.add_argument(
+        "--player-2-model",
+        type=str,
+        help="Model to use for Player 2. Must be used with --player-1-model.",
     )
     parser.add_argument(
         "--max-tokens",
@@ -345,6 +397,18 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Model selection logic
+    if args.model and (args.player_1_model or args.player_2_model):
+        parser.error("Cannot use --model with --player-1-model or --player-2-model.")
+
+    if (args.player_1_model and not args.player_2_model) or (
+        args.player_2_model and not args.player_1_model
+    ):
+        parser.error("--player-1-model and --player-2-model must be used together.")
+
+    player1_model = args.player_1_model or args.model or "anthropic/claude-sonnet-4"
+    player2_model = args.player_2_model or args.model or "anthropic/claude-sonnet-4"
+
     # Get OpenRouter API key
     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
@@ -361,7 +425,8 @@ def main() -> None:
         assert openrouter_api_key is not None  # Already validated above
         game = MindMeldGame(
             openrouter_api_key,
-            args.model,
+            player1_model,
+            player2_model,
             args.player_1_word,
             args.player_2_word,
             args.max_tokens,
