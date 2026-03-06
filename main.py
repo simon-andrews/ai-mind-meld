@@ -8,7 +8,7 @@ from typing import List, Optional
 from openai import OpenAI
 
 # Game constants
-FINAL_WORD_PATTERN = r"FINAL WORD:\s*([A-Za-z]+)"
+FINAL_WORD_PATTERN = r"FINAL WORD:\s*([A-Za-z\s]+)"
 
 
 def _extract_word_from_response(content: str) -> str:
@@ -37,12 +37,11 @@ def _get_random_fallback_word() -> str:
 
 def _clean_word(word: str) -> str:
     """Clean and validate a word, returning a fallback if invalid."""
-    # Remove non-alphabetic characters
-    cleaned = "".join(c for c in word if c.isalpha())
+    # Remove non-alphabetic characters except spaces
+    cleaned = "".join(c for c in word if c.isalpha() or c.isspace()).strip()
 
-    # Take only first word if multiple
-    if " " in cleaned:
-        cleaned = cleaned.split()[0]
+    # Normalize multiple spaces to single space
+    cleaned = " ".join(cleaned.split())
 
     # Return fallback if no valid word
     if not cleaned:
@@ -205,6 +204,8 @@ class MindMeldAI:
 
         content = ""
         for chunk in response:
+            if not chunk.choices:
+                continue
             if chunk.choices[0].delta.content is not None:
                 token = chunk.choices[0].delta.content
                 content += token
