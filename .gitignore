@@ -9,5 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# Claude Code
-.claude/
+# Claude Code (ignore local settings, but track shared commands)
+.claude/*
+!.claude/commands/
