@@ -1,8 +1,8 @@
 ---
-description: Routine maintenance pass — prevent bitrot, keep deps and docs current, open a PR
+description: Routine maintenance pass — prevent bit rot, keep deps and docs current, open a PR
 ---
 
-Do a routine maintenance pass on this repository. The goal is to prevent bitrot
+Do a routine maintenance pass on this repository. The goal is to prevent bit rot
 and keep things current with best practices — NOT to add features or change what
 the project does. Stay in scope: prevent rot, don't add scope.
 
