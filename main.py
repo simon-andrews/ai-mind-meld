@@ -4,7 +4,6 @@ import random
 import re
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
 from openai import OpenAI
 
 # Game constants
@@ -50,7 +49,7 @@ def _clean_word(word: str) -> str:
     return cleaned
 
 
-def _validate_api_key(api_key: Optional[str]) -> None:
+def _validate_api_key(api_key: str | None) -> None:
     """Validate that API key is provided."""
     if not api_key:
         raise ValueError("OPENROUTER_API_KEY environment variable not set")
@@ -61,8 +60,8 @@ class GameState:
     """Tracks the current state of the Mind Meld game."""
 
     round_number: int = 1
-    player1_words: List[str] = field(default_factory=list)
-    player2_words: List[str] = field(default_factory=list)
+    player1_words: list[str] = field(default_factory=list)
+    player2_words: list[str] = field(default_factory=list)
     used_words: set[str] = field(default_factory=set)
     convergence_achieved: bool = False
 
@@ -84,7 +83,7 @@ class MindMeldAI:
         self.client = client
         self.max_tokens = max_tokens
         self.temperature = temperature
-        self.word_history: List[str] = []
+        self.word_history: list[str] = []
 
     def generate_word(
         self,
@@ -142,7 +141,7 @@ class MindMeldAI:
 
     def _build_context(self, game_state: GameState) -> str:
         """Build the context prompt for the AI based on game state."""
-        context_parts: List[str] = []
+        context_parts: list[str] = []
 
         if game_state.round_number == 1:
             context_parts.append(
@@ -223,8 +222,8 @@ class MindMeldGame:
         openrouter_api_key: str,
         player1_model: str = "anthropic/claude-sonnet-4",
         player2_model: str = "anthropic/claude-sonnet-4",
-        player1_word: Optional[str] = None,
-        player2_word: Optional[str] = None,
+        player1_word: str | None = None,
+        player2_word: str | None = None,
         max_tokens: int = 2048,
         temperature: float = 1.0,
         max_rounds: int = 10,
