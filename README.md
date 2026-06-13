@@ -153,7 +153,7 @@ Run `uv run python main.py --help` to see all available options:
 
 - `--player-1-word`: Predefined first word for Player 1
 - `--player-2-word`: Predefined first word for Player 2
-- `--model`: Global model to use for both AI players (default: anthropic/claude-sonnet-4). Cannot be combined with `--player-*-model`.
+- `--model`: Global model to use for both AI players (default: anthropic/claude-sonnet-latest). Cannot be combined with `--player-*-model`.
 - `--player-1-model`: Model to use for Player 1 (must be used together with `--player-2-model`)
 - `--player-2-model`: Model to use for Player 2 (must be used together with `--player-1-model`)
 - `--max-tokens`: Maximum tokens for AI responses (default: 2048)
