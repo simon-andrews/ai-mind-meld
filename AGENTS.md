@@ -36,5 +36,5 @@ This is an AI Mind Meld game where two AI players attempt to converge on the sam
 - **Word cleaning**: Removes non-alphabetic characters, handles multi-word responses
 - **Fallback system**: Uses random words from `dictionary.txt` when extraction fails
 - **Context management**: Only previous round words shown to AIs (not full history)
-- **Default model**: `anthropic/claude-sonnet-4`
+- **Default model**: `anthropic/claude-sonnet-latest` (OpenRouter alias that tracks the newest Claude Sonnet release)
 - **Error handling**: Graceful handling of API key validation, interrupts, and network errors
