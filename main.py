@@ -220,8 +220,8 @@ class MindMeldGame:
     def __init__(
         self,
         openrouter_api_key: str,
-        player1_model: str = "anthropic/claude-sonnet-latest",
-        player2_model: str = "anthropic/claude-sonnet-latest",
+        player1_model: str = "~anthropic/claude-sonnet-latest",
+        player2_model: str = "~anthropic/claude-sonnet-latest",
         player1_word: str | None = None,
         player2_word: str | None = None,
         max_tokens: int = 2048,
@@ -407,10 +407,10 @@ def main() -> None:
         parser.error("--player-1-model and --player-2-model must be used together.")
 
     player1_model = (
-        args.player_1_model or args.model or "anthropic/claude-sonnet-latest"
+        args.player_1_model or args.model or "~anthropic/claude-sonnet-latest"
     )
     player2_model = (
-        args.player_2_model or args.model or "anthropic/claude-sonnet-latest"
+        args.player_2_model or args.model or "~anthropic/claude-sonnet-latest"
     )
 
     # Get OpenRouter API key
