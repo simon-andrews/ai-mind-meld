@@ -14,3 +14,20 @@ dev = [
     "ruff",
     "pre-commit",
 ]
+
+[tool.ruff.lint]
+# Opt into the full Ruff rule set, then ignore the rules that are actively
+# inappropriate for this small CLI or that conflict with the formatter.
+select = ["ALL"]
+ignore = [
+    "COM812",  # trailing-comma rule conflicts with the Ruff formatter
+    "D203",    # one-blank-line-before-class; incompatible with D211 (keep D211)
+    "D213",    # multi-line-summary-second-line; incompatible with D212 (keep D212)
+    "T201",    # print() is this CLI's primary output mechanism
+    "S311",    # random is used for game word choice, not for security
+    "CPY001",  # licensing is covered by the LICENSE file, not per-file headers
+    "E501",    # line length is managed by the formatter
+    "PLR0913", # the game controller intentionally exposes many config arguments
+    "PLR0917", # (same, positional form)
+    "TRY003",  # allow descriptive messages on standard exception types
+]
