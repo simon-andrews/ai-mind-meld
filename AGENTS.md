@@ -32,7 +32,7 @@ This is an AI Mind Meld game where two AI players attempt to converge on the sam
 ## Key Implementation Details
 
 - **Streaming responses**: AI responses are streamed in real-time with visual thinking process display
-- **Word extraction**: Uses regex pattern `FINAL WORD:\s*([A-Za-z]+)` with multiple fallback methods
+- **Word extraction**: Uses regex pattern `FINAL WORD:\s*([A-Za-z\s]+)` with multiple fallback methods
 - **Word cleaning**: Removes non-alphabetic characters, handles multi-word responses
 - **Fallback system**: Uses random words from `dictionary.txt` when extraction fails
 - **Context management**: Only previous round words shown to AIs (not full history)
