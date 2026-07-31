@@ -1,9 +1,13 @@
+"""AI Mind Meld: two AI players try to converge on the same word over rounds."""
+
 import argparse
 import os
 import random
 import re
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
+
 from openai import OpenAI
 
 # Game constants
@@ -29,7 +33,7 @@ def _extract_word_from_response(content: str) -> str:
 
 def _get_random_fallback_word() -> str:
     """Get a random word from dictionary.txt as fallback."""
-    with open("dictionary.txt", "r") as f:
+    with Path("dictionary.txt").open() as f:
         words = [line.strip().upper() for line in f if line.strip()]
     return random.choice(words)
 
@@ -52,7 +56,8 @@ def _clean_word(word: str) -> str:
 def _validate_api_key(api_key: str | None) -> None:
     """Validate that API key is provided."""
     if not api_key:
-        raise ValueError("OPENROUTER_API_KEY environment variable not set")
+        msg = "OPENROUTER_API_KEY environment variable not set"
+        raise ValueError(msg)
 
 
 @dataclass
@@ -88,6 +93,7 @@ class MindMeldAI:
     def generate_word(
         self,
         game_state: GameState,
+        *,
         use_predefined_word: bool = False,
         max_retries: int = 3,
     ) -> str:
@@ -110,13 +116,12 @@ class MindMeldAI:
             if word not in game_state.used_words:
                 self.word_history.append(word)
                 return word
-            else:
-                print(
-                    f"\n⚠️  Word '{word}' has already been used. Retrying... (Attempt {attempt + 1}/{max_retries + 1})"
-                )
-                if attempt < max_retries:
-                    # Add context about needing a different word for retry
-                    context += f"\n\nNote: The word '{word}' has already been used in this game. Please choose a different word."
+            print(
+                f"\n⚠️  Word '{word}' has already been used. Retrying... (Attempt {attempt + 1}/{max_retries + 1})"
+            )
+            if attempt < max_retries:
+                # Add context about needing a different word for retry
+                context += f"\n\nNote: The word '{word}' has already been used in this game. Please choose a different word."
 
         # If all retries failed, use a fallback word
         print("\n🔄 All attempts used repeated words. Using fallback...")
@@ -126,7 +131,7 @@ class MindMeldAI:
 
     def _get_unused_random_word(self, used_words: set[str]) -> str:
         """Get a random unused word from the dictionary."""
-        with open("dictionary.txt", "r") as f:
+        with Path("dictionary.txt").open() as f:
             words = [line.strip().upper() for line in f if line.strip()]
 
         # Filter out used words
@@ -229,6 +234,7 @@ class MindMeldGame:
         max_rounds: int = 10,
         round_pause_seconds: float = 2.0,
     ) -> None:
+        """Configure the two AI players, models, and game parameters."""
         # Initialize OpenAI client with OpenRouter
         self.client = OpenAI(
             api_key=openrouter_api_key, base_url="https://openrouter.ai/api/v1"
@@ -254,7 +260,6 @@ class MindMeldGame:
 
     def play_round(self) -> bool:
         """Play one round of Mind Meld. Returns True if convergence achieved."""
-
         print(f"\n=== ROUND {self.game_state.round_number} ===")
 
         # Player 1 generates word (use predefined word for first round if provided)
@@ -266,7 +271,9 @@ class MindMeldGame:
             use_predefined = self.game_state.round_number == 1 and bool(
                 self.player1_first_word
             )
-            word1 = self.player1.generate_word(self.game_state, use_predefined)
+            word1 = self.player1.generate_word(
+                self.game_state, use_predefined_word=use_predefined
+            )
             print(f"\n🎯 {self.player1.name} chooses: '{word1}'")
 
         # Player 2 generates word (use predefined word for first round if provided)
@@ -278,7 +285,9 @@ class MindMeldGame:
             use_predefined = self.game_state.round_number == 1 and bool(
                 self.player2_first_word
             )
-            word2 = self.player2.generate_word(self.game_state, use_predefined)
+            word2 = self.player2.generate_word(
+                self.game_state, use_predefined_word=use_predefined
+            )
             print(f"\n🎯 {self.player2.name} chooses: '{word2}'")
 
         # Update game state
@@ -292,13 +301,11 @@ class MindMeldGame:
             print(f"\n🎉 MIND MELD ACHIEVED! Both players said '{word1}'!")
             self.game_state.convergence_achieved = True
             return True
-        else:
-            print(f"\n❌ No match this round. ({word1} ≠ {word2})")
-            return False
+        print(f"\n❌ No match this round. ({word1} ≠ {word2})")
+        return False
 
     def play_game(self) -> None:
         """Play a complete game of Mind Meld."""
-
         print("🧠 MIND MELD GAME STARTING 🧠")
         print("=" * 50)
         print(
@@ -324,13 +331,16 @@ class MindMeldGame:
 
     def print_game_summary(self) -> None:
         """Print a summary of the completed game."""
-
         print("\n" + "=" * 50)
         print("GAME SUMMARY")
         print("=" * 50)
 
         for i, (word1, word2) in enumerate(
-            zip(self.game_state.player1_words, self.game_state.player2_words)
+            zip(
+                self.game_state.player1_words,
+                self.game_state.player2_words,
+                strict=True,
+            )
         ):
             status = "✅ MATCH!" if word1 == word2 else "❌ No match"
             print(f"Round {i + 1}: {word1} | {word2} - {status}")
@@ -346,8 +356,7 @@ class MindMeldGame:
 
 
 def main() -> None:
-    """Main entry point for the Mind Meld game."""
-
+    """Run the Mind Meld game from the command line."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="AI Mind Meld Game")
     parser.add_argument(
@@ -426,7 +435,7 @@ def main() -> None:
 
     try:
         # Create and run the game with command line arguments
-        assert openrouter_api_key is not None  # Already validated above
+        assert openrouter_api_key is not None, "validated above"  # noqa: S101
         game = MindMeldGame(
             openrouter_api_key,
             player1_model,
@@ -442,7 +451,7 @@ def main() -> None:
 
     except KeyboardInterrupt:
         print("\n\nGame interrupted by user. Thanks for playing!")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - top-level CLI guard: report any failure gracefully
         print(f"\n❌ An error occurred: {e}")
         print("Please check your API key and internet connection.")
 
