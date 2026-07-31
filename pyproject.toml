@@ -14,3 +14,9 @@ dev = [
     "ruff",
     "pre-commit",
 ]
+
+[tool.ruff.lint]
+# Ruff 0.16 expanded its default lint rule set. Pin the historical default
+# selection so linting stays stable across ruff upgrades and CI does not break
+# on newly-enabled rules that were never part of this project's linting.
+select = ["E4", "E7", "E9", "F"]
