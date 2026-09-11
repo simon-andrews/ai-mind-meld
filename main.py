@@ -4,6 +4,7 @@ import random
 import re
 import time
 from dataclasses import dataclass, field
+
 from openai import OpenAI
 
 # Game constants
@@ -442,7 +443,7 @@ def main() -> None:
 
     except KeyboardInterrupt:
         print("\n\nGame interrupted by user. Thanks for playing!")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - top-level CLI guard: show a friendly message for any error
         print(f"\n❌ An error occurred: {e}")
         print("Please check your API key and internet connection.")
 
