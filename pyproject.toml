@@ -14,3 +14,9 @@ dev = [
     "ruff",
     "pre-commit",
 ]
+
+[tool.ruff.lint]
+# Ruff 0.16 broadened its default rule set from a handful of categories to
+# several dozen. Pin the historical default so toolchain upgrades don't
+# silently change which lints are enforced.
+select = ["E4", "E7", "E9", "F"]
